@@ -37,25 +37,43 @@ const TaskProposals: React.FC<TaskProposalsProps> = ({ taskId, taskTitle }) => {
     queryKey: ['proposals', taskId],
     queryFn: async () => {
       console.log('Fetching proposals for task:', taskId);
-      const { data, error } = await supabase
+      
+      // First get proposals
+      const { data: proposalsData, error: proposalsError } = await supabase
         .from('proposals')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .eq('task_id', taskId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching proposals:', error);
-        throw error;
+      if (proposalsError) {
+        console.error('Error fetching proposals:', proposalsError);
+        throw proposalsError;
       }
 
-      console.log('Fetched proposals:', data);
-      return data;
+      if (!proposalsData || proposalsData.length === 0) {
+        return [];
+      }
+
+      // Get tasker profiles for the proposals
+      const taskerIds = proposalsData.map(proposal => proposal.tasker_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', taskerIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Continue without profiles if there's an error
+      }
+
+      // Combine proposals with profiles
+      const proposalsWithProfiles = proposalsData.map(proposal => ({
+        ...proposal,
+        profiles: profilesData?.find(profile => profile.id === proposal.tasker_id) || null
+      }));
+
+      console.log('Fetched proposals with profiles:', proposalsWithProfiles);
+      return proposalsWithProfiles;
     },
     enabled: !!user && !!taskId
   });
@@ -179,7 +197,7 @@ const TaskProposals: React.FC<TaskProposalsProps> = ({ taskId, taskTitle }) => {
                     {proposal.profiles?.full_name || 'Anonymous Tasker'}
                   </CardTitle>
                   <CardDescription className="text-sm">
-                    {proposal.profiles?.email}
+                    {proposal.profiles?.email || 'No email available'}
                   </CardDescription>
                 </div>
               </div>
