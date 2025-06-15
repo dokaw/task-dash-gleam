@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Clock, DollarSign, User, Briefcase, Calendar, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Clock, DollarSign, Calendar, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
+import TaskProgress from "@/components/TaskProgress";
+import TaskerContactCard from "@/components/TaskerContactCard";
 
 interface AssignedTask {
   id: string;
@@ -31,6 +31,9 @@ interface AssignedTask {
     tasker_profile?: {
       full_name: string;
       email: string;
+      phone?: string;
+      rating?: number;
+      completedTasks?: number;
     };
   };
 }
@@ -40,7 +43,7 @@ const demoAssignedTasks: AssignedTask[] = [
   {
     id: "demo-1",
     title: "Logo Design for Tech Startup",
-    description: "Need a professional logo design for my new tech startup. Looking for something modern, clean, and memorable that represents innovation and technology. The logo should work well in both color and black & white versions.",
+    description: "Need a professional logo design for my new tech startup. Looking for something modern, clean, and memorable that represents innovation and technology.",
     category: "Design",
     location: "San Francisco, CA",
     budget_type: "fixed",
@@ -48,23 +51,26 @@ const demoAssignedTasks: AssignedTask[] = [
     budget_min: null,
     budget_max: null,
     required_date: "2024-01-25",
-    status: "assigned",
+    status: "in_progress",
     created_at: "2024-01-15T10:30:00Z",
     accepted_proposal: {
       id: "prop-1",
       amount: 150,
       timeline: "1-week",
-      message: "I'm a professional graphic designer with 5+ years of experience in logo design. I've worked with numerous startups and understand the importance of creating a memorable brand identity.",
+      message: "I'm a professional graphic designer with 5+ years of experience in logo design.",
       tasker_profile: {
         full_name: "Sarah Johnson",
-        email: "sarah.j@example.com"
+        email: "sarah.j@example.com",
+        phone: "+1 (555) 123-4567",
+        rating: 4.9,
+        completedTasks: 47
       }
     }
   },
   {
     id: "demo-2",
     title: "Website Development for Restaurant",
-    description: "Looking for a developer to create a modern website for my restaurant. Need online ordering system, menu display, contact information, and customer reviews section. Should be mobile-responsive and easy to update.",
+    description: "Looking for a developer to create a modern website for my restaurant with online ordering system.",
     category: "Web Development",
     location: "New York, NY",
     budget_type: "fixed",
@@ -72,23 +78,25 @@ const demoAssignedTasks: AssignedTask[] = [
     budget_min: null,
     budget_max: null,
     required_date: "2024-02-10",
-    status: "assigned",
+    status: "review",
     created_at: "2024-01-14T15:45:00Z",
     accepted_proposal: {
       id: "prop-2",
       amount: 800,
       timeline: "2-weeks",
-      message: "Full-stack developer with expertise in React and Node.js. I'll create a responsive website with online ordering system, menu management, and customer reviews.",
+      message: "Full-stack developer with expertise in React and Node.js.",
       tasker_profile: {
         full_name: "Mike Chen",
-        email: "mike.chen@example.com"
+        email: "mike.chen@example.com",
+        rating: 4.8,
+        completedTasks: 23
       }
     }
   },
   {
     id: "demo-3",
     title: "Mobile App UI/UX Design",
-    description: "Need UI/UX design for a fitness tracking mobile app. Looking for modern, intuitive design that encourages user engagement. Should include onboarding flow, dashboard, workout tracking, and progress visualization.",
+    description: "Need UI/UX design for a fitness tracking mobile app with modern, intuitive design.",
     category: "Design",
     location: "Austin, TX",
     budget_type: "fixed",
@@ -102,10 +110,13 @@ const demoAssignedTasks: AssignedTask[] = [
       id: "prop-3",
       amount: 450,
       timeline: "1-month",
-      message: "UI/UX designer with a focus on mobile applications. I'll create wireframes, user journey maps, and high-fidelity mockups for your iOS and Android app.",
+      message: "UI/UX designer with a focus on mobile applications.",
       tasker_profile: {
         full_name: "Alex Thompson",
-        email: "alex.t@example.com"
+        email: "alex.t@example.com",
+        phone: "+1 (555) 987-6543",
+        rating: 4.7,
+        completedTasks: 31
       }
     }
   }
@@ -119,12 +130,12 @@ const MyAssignedTasks = () => {
     queryFn: async () => {
       console.log('Fetching assigned tasks for user:', user?.id);
       
-      // Get tasks owned by current user that have status 'assigned'
+      // Get tasks owned by current user that have status 'assigned', 'in_progress', 'review', or 'completed'
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user?.id)
-        .eq('status', 'assigned')
+        .in('status', ['assigned', 'in_progress', 'review', 'completed'])
         .order('created_at', { ascending: false });
 
       if (tasksError) {
@@ -220,35 +231,26 @@ const MyAssignedTasks = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const handleMarkCompleted = async (taskId: string) => {
+  const handleStatusUpdate = async (taskId: string, status: string, note?: string) => {
     if (isDemo) {
-      toast.success('Demo: Task would be marked as completed!');
+      toast.success(`Demo: Task would be updated to ${status}!`);
       return;
     }
 
     try {
       const { error } = await supabase
         .from('tasks')
-        .update({ status: 'completed', updated_at: new Date().toISOString() })
+        .update({ status, updated_at: new Date().toISOString() })
         .eq('id', taskId);
 
       if (error) throw error;
 
-      toast.success('Task marked as completed!');
+      toast.success(`Task status updated to ${status.replace('_', ' ')}!`);
       // Refresh the query
       window.location.reload();
     } catch (error) {
-      console.error('Error marking task as completed:', error);
-      toast.error('Failed to mark task as completed. Please try again.');
-    }
-  };
-
-  const handleContactTasker = (taskerEmail: string) => {
-    if (isDemo) {
-      toast.success(`Demo: Would contact ${taskerEmail}`);
-    } else {
-      // In real implementation, this could open a messaging system
-      window.location.href = `mailto:${taskerEmail}`;
+      console.error('Error updating task status:', error);
+      toast.error('Failed to update task status. Please try again.');
     }
   };
 
@@ -295,103 +297,90 @@ const MyAssignedTasks = () => {
             {isDemo && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-blue-800 text-sm">
-                  <strong>Demo Data:</strong> This shows sample assigned tasks. In the real app, you'll see your actual tasks that have been assigned to taskers.
+                  <strong>Demo Data:</strong> This shows sample assigned tasks with different progress stages. In the real app, you'll see your actual tasks.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             {displayTasks.map((task) => (
-              <Card key={task.id} className="border-l-4 border-l-green-500">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-xl text-gray-900">{task.title}</CardTitle>
-                      <CardDescription className="text-sm mt-1">
-                        <Badge variant="outline" className="mr-2">{task.category}</Badge>
-                        <Badge className="bg-green-100 text-green-800">Assigned</Badge>
-                        {isDemo && <Badge variant="secondary" className="ml-2">Demo</Badge>}
-                      </CardDescription>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">Created</div>
-                      <div className="text-sm font-medium">{formatDate(task.created_at)}</div>
-                    </div>
-                  </div>
-
-                  {/* Assigned Tasker Info */}
-                  {task.accepted_proposal && (
-                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <Avatar>
-                          <AvatarFallback>
-                            <User className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
+              <div key={task.id} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Task Card */}
+                <div className="lg:col-span-2">
+                  <Card className="border-l-4 border-l-green-500">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between">
                         <div>
-                          <div className="font-medium text-green-800">Assigned Tasker</div>
-                          <div className="text-sm text-green-700">
-                            {task.accepted_proposal.tasker_profile?.full_name || 'Anonymous Tasker'}
-                          </div>
-                          <div className="text-xs text-green-600">
-                            {task.accepted_proposal.tasker_profile?.email || 'No email available'}
-                          </div>
+                          <CardTitle className="text-xl text-gray-900">{task.title}</CardTitle>
+                          <CardDescription className="text-sm mt-1">
+                            <Badge variant="outline" className="mr-2">{task.category}</Badge>
+                            {isDemo && <Badge variant="secondary" className="ml-2">Demo</Badge>}
+                          </CardDescription>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-500">Created</div>
+                          <div className="text-sm font-medium">{formatDate(task.created_at)}</div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    </CardHeader>
+                    
+                    <CardContent className="pt-0">
+                      <div className="mb-4">
+                        <h4 className="font-medium text-gray-900 mb-2">Task Description:</h4>
+                        <p className="text-gray-700 text-sm leading-relaxed">{task.description}</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm">
                         <div className="flex items-center space-x-2">
-                          <DollarSign className="h-4 w-4 text-green-600" />
-                          <span className="font-semibold">${task.accepted_proposal.amount}</span>
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <span>{task.location}</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-green-600" />
-                          <span>{getTimelineDisplay(task.accepted_proposal.timeline)}</span>
+                          <DollarSign className="h-4 w-4 text-gray-500" />
+                          <span>{getBudgetDisplay(task)}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span>{formatDate(task.required_date)}</span>
                         </div>
                       </div>
-                    </div>
+
+                      {task.accepted_proposal && (
+                        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center space-x-2">
+                              <DollarSign className="h-4 w-4 text-green-600" />
+                              <span className="font-semibold">${task.accepted_proposal.amount}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Clock className="h-4 w-4 text-green-600" />
+                              <span>{getTimelineDisplay(task.accepted_proposal.timeline)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Side Panel with Tasker Info and Progress */}
+                <div className="space-y-4">
+                  {task.accepted_proposal?.tasker_profile && (
+                    <TaskerContactCard 
+                      tasker={task.accepted_proposal.tasker_profile} 
+                      isDemo={isDemo}
+                    />
                   )}
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <div className="mb-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Task Description:</h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">{task.description}</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <span>{task.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-gray-500" />
-                      <span>{getBudgetDisplay(task)}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
-                      <span>{formatDate(task.required_date)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="space-x-3">
-                      <Button
-                        onClick={() => handleMarkCompleted(task.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        Mark as Completed
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleContactTasker(task.accepted_proposal?.tasker_profile?.email || '')}
-                      >
-                        Contact Tasker
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  
+                  <TaskProgress
+                    taskId={task.id}
+                    currentStatus={task.status}
+                    isTasker={false}
+                    onStatusUpdate={handleStatusUpdate}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         </div>
