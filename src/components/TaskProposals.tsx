@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,12 +40,13 @@ const TaskProposals: React.FC<TaskProposalsProps> = ({ taskId, taskTitle }) => {
         .from('proposals')
         .select(`
           *,
-          profiles:tasker_id (
+          profiles!inner (
             full_name,
             email
           )
         `)
         .eq('task_id', taskId)
+        .eq('profiles.id', supabase.raw('proposals.tasker_id'))
         .order('created_at', { ascending: false });
 
       if (error) {
