@@ -9,7 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          budget_amount: number | null
+          budget_max: number | null
+          budget_min: number | null
+          budget_type: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          location: string
+          required_date: string | null
+          skills: string[] | null
+          status: string
+          time_flexible: boolean | null
+          title: string
+          updated_at: string
+          urgent: boolean | null
+          user_id: string
+        }
+        Insert: {
+          budget_amount?: number | null
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_type: string
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          location: string
+          required_date?: string | null
+          skills?: string[] | null
+          status?: string
+          time_flexible?: boolean | null
+          title: string
+          updated_at?: string
+          urgent?: boolean | null
+          user_id: string
+        }
+        Update: {
+          budget_amount?: number | null
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_type?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          location?: string
+          required_date?: string | null
+          skills?: string[] | null
+          status?: string
+          time_flexible?: boolean | null
+          title?: string
+          updated_at?: string
+          urgent?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

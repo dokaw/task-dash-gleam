@@ -1,23 +1,25 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar as CalendarIcon, MapPin, DollarSign, Clock, CheckCircle } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, MapPin, DollarSign, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const PostTask = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [taskData, setTaskData] = useState({
     title: "",
     description: "",
@@ -32,6 +34,8 @@ const PostTask = () => {
     urgent: false
   });
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const categories = [
     { value: "handyman", label: "Handyman", icon: "🔧" },
@@ -77,10 +81,72 @@ const PostTask = () => {
     }));
   };
 
-  const handleSubmit = () => {
-    // Handle task submission
-    console.log("Task submitted:", taskData);
-    navigate('/');
+  const handleSubmit = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to post a task.",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Prepare task data for database
+      const taskForDB = {
+        user_id: user.id,
+        title: taskData.title,
+        description: taskData.description,
+        category: taskData.category,
+        location: taskData.location,
+        budget_type: taskData.budgetType,
+        budget_amount: taskData.budgetType === 'fixed' || taskData.budgetType === 'hourly' 
+          ? parseInt(taskData.budgetAmount) || null 
+          : null,
+        budget_min: taskData.budgetType === 'range' ? parseInt(taskData.budgetRange.min) || null : null,
+        budget_max: taskData.budgetType === 'range' ? parseInt(taskData.budgetRange.max) || null : null,
+        required_date: taskData.date ? taskData.date.toISOString().split('T')[0] : null,
+        time_flexible: taskData.timeFlexible,
+        urgent: taskData.urgent,
+        skills: taskData.skills,
+        status: 'open'
+      };
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([taskForDB])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating task:', error);
+        toast({
+          title: "Error creating task",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Task posted successfully!",
+        description: "Your task is now live and visible to Taskers.",
+      });
+
+      navigate('/browse');
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error creating task",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -99,10 +165,19 @@ const PostTask = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline">Sign In</Button>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                Browse Tasks
-              </Button>
+              {user ? (
+                <>
+                  <span className="text-sm text-gray-600">Welcome, {user.email}</span>
+                  <Button variant="outline" onClick={() => navigate('/browse')}>Browse Tasks</Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => navigate('/auth')}>Sign In</Button>
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    Browse Tasks
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -459,9 +534,13 @@ const PostTask = () => {
             </Button>
             <Button
               onClick={currentStep === 3 ? handleSubmit : handleNext}
+              disabled={isSubmitting}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
-              {currentStep === 3 ? "Post Task" : "Next"}
+              {currentStep === 3 
+                ? (isSubmitting ? "Posting Task..." : "Post Task") 
+                : "Next"
+              }
             </Button>
           </div>
         </Card>
