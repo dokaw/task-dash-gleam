@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,9 @@ interface Task {
   urgent: boolean;
   created_at: string;
   status: string;
+  required_date: string | null;
+  skills: string[] | null;
+  time_flexible: boolean | null;
 }
 
 const BrowseTasks = () => {
