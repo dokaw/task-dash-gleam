@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +11,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import TaskDetailsModal from "@/components/TaskDetailsModal";
+import MakeOfferModal from "@/components/MakeOfferModal";
 
 interface Task {
   id: string;
@@ -35,6 +36,9 @@ const BrowseTasks = () => {
   const [sortBy, setSortBy] = useState("newest");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
 
   const { data: tasks = [], isLoading, error } = useQuery({
     queryKey: ['tasks', 'open'],
@@ -102,14 +106,30 @@ const BrowseTasks = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const handleViewDetails = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailsModalOpen(true);
+  };
+
   const handleMakeOffer = (taskId: string) => {
     if (!user) {
       toast.error('Please sign in to make an offer');
       navigate('/auth');
       return;
     }
-    // TODO: Implement offer functionality
-    toast.info('Offer functionality coming soon!');
+    
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setSelectedTask(task);
+      setIsOfferModalOpen(true);
+    }
+  };
+
+  const handleSubmitOffer = async (offer: any) => {
+    // TODO: Implement offer submission to database
+    console.log('Submitting offer:', offer);
+    // This will be implemented when we create the proposals table
+    toast.info('Offer functionality will be fully implemented with the proposals system');
   };
 
   return (
@@ -249,66 +269,89 @@ const BrowseTasks = () => {
               </div>
             ) : (
               <div className="space-y-6">
-                {filteredTasks.map((task) => (
-                  <Card key={task.id} className="hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4 border-l-blue-500">
-                    <CardHeader>
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <CardTitle className="text-xl">{task.title}</CardTitle>
-                            {task.urgent && <Badge variant="destructive">Urgent</Badge>}
-                          </div>
-                          <CardDescription className="text-sm leading-relaxed">
-                            {task.description}
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                          <div>
-                            <span className="text-3xl font-bold text-green-600">{formatBudget(task)}</span>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <MapPin className="h-4 w-4" />
-                            <span>{task.location}</span>
-                          </div>
-                          
-                          <div className="flex items-center space-x-4 text-sm">
-                            <div className="flex items-center space-x-1">
-                              <Clock className="h-4 w-4 text-gray-400" />
-                              <span className="text-gray-500">{getTimeAgo(task.created_at)}</span>
+                {!isLoading && filteredTasks.length > 0 && (
+                  <div className="space-y-6">
+                    {filteredTasks.map((task) => (
+                      <Card key={task.id} className="hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4 border-l-blue-500">
+                        <CardHeader>
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <CardTitle className="text-xl">{task.title}</CardTitle>
+                                {task.urgent && <Badge variant="destructive">Urgent</Badge>}
+                              </div>
+                              <CardDescription className="text-sm leading-relaxed">
+                                {task.description}
+                              </CardDescription>
                             </div>
-                            <Badge variant="secondary" className="capitalize">
-                              {task.category}
-                            </Badge>
                           </div>
-                        </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                              <div>
+                                <span className="text-3xl font-bold text-green-600">{formatBudget(task)}</span>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                                <MapPin className="h-4 w-4" />
+                                <span>{task.location}</span>
+                              </div>
+                              
+                              <div className="flex items-center space-x-4 text-sm">
+                                <div className="flex items-center space-x-1">
+                                  <Clock className="h-4 w-4 text-gray-400" />
+                                  <span className="text-gray-500">{getTimeAgo(task.created_at)}</span>
+                                </div>
+                                <Badge variant="secondary" className="capitalize">
+                                  {task.category}
+                                </Badge>
+                              </div>
+                            </div>
 
-                        <div className="flex flex-col justify-between">
-                          <div className="flex flex-col space-y-2">
-                            <Button 
-                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                              onClick={() => handleMakeOffer(task.id)}
-                            >
-                              Make an Offer
-                            </Button>
-                            <Button variant="outline" className="w-full">
-                              View Details
-                            </Button>
+                            <div className="flex flex-col justify-between">
+                              <div className="flex flex-col space-y-2">
+                                <Button 
+                                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                                  onClick={() => handleMakeOffer(task.id)}
+                                >
+                                  Make an Offer
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full"
+                                  onClick={() => handleViewDetails(task)}
+                                >
+                                  View Details
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <TaskDetailsModal
+        task={selectedTask}
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        onMakeOffer={handleMakeOffer}
+      />
+
+      <MakeOfferModal
+        task={selectedTask}
+        isOpen={isOfferModalOpen}
+        onClose={() => setIsOfferModalOpen(false)}
+        onSubmit={handleSubmitOffer}
+      />
     </div>
   );
 };
