@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import BrowseTasks from "./pages/BrowseTasks";
 import PostTask from "./pages/PostTask";
+import Offers from "./pages/Offers";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <PostTask />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/offers" 
+              element={
+                <ProtectedRoute>
+                  <Offers />
                 </ProtectedRoute>
               } 
             />
