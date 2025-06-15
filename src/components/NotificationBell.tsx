@@ -83,8 +83,10 @@ const NotificationBell = () => {
   useEffect(() => {
     if (!user) return;
 
+    let channelSubscribed = false;
+    
     const channel = supabase
-      .channel('notifications')
+      .channel(`notifications_${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -94,14 +96,30 @@ const NotificationBell = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
+          console.log('New notification received:', payload);
           refetch();
           toast.success('New notification received!');
         }
-      )
-      .subscribe();
+      );
+
+    const subscribeToChannel = async () => {
+      if (!channelSubscribed) {
+        const subscriptionResult = await channel.subscribe();
+        if (subscriptionResult === 'SUBSCRIBED') {
+          channelSubscribed = true;
+          console.log('Successfully subscribed to notifications channel');
+        }
+      }
+    };
+
+    subscribeToChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelSubscribed) {
+        supabase.removeChannel(channel);
+        channelSubscribed = false;
+        console.log('Unsubscribed from notifications channel');
+      }
     };
   }, [user, refetch]);
 
