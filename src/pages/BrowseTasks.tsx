@@ -6,13 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Search, MapPin, Clock, Filter, ArrowLeft, Loader2, Plus, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import TaskDetailsModal from "@/components/TaskDetailsModal";
 import MakeOfferModal from "@/components/MakeOfferModal";
+import Navigation from "@/components/Navigation";
 
 interface Task {
   id: string;

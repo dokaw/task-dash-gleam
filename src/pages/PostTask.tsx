@@ -1,529 +1,472 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar as CalendarIcon, MapPin, DollarSign, CheckCircle } from "lucide-react";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
-import { MessageSquare } from "lucide-react";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, ArrowLeft, Plus, MessageSquare } from 'lucide-react';
+import { toast } from 'sonner';
+import Navigation from '@/components/Navigation';
+
+interface FormData {
+  title: string;
+  description: string;
+  category: string;
+  location: string;
+  budgetType: string;
+  budgetAmount: number | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  urgent: boolean;
+  requiredDate: Date | null;
+  skills: string[];
+  timeFlexible: boolean;
+}
 
 const PostTask = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [taskData, setTaskData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    location: "",
-    budgetType: "fixed",
-    budgetAmount: "",
-    budgetRange: { min: "", max: "" },
-    date: undefined as Date | undefined,
+  const [formData, setFormData] = useState<FormData>({
+    title: '',
+    description: '',
+    category: 'handyman',
+    location: '',
+    budgetType: 'fixed',
+    budgetAmount: null,
+    budgetMin: null,
+    budgetMax: null,
+    urgent: false,
+    requiredDate: null,
+    skills: [],
     timeFlexible: false,
-    skills: [] as string[],
-    urgent: false
   });
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   const categories = [
-    { value: "handyman", label: "Handyman", icon: "🔧" },
-    { value: "cleaning", label: "Cleaning", icon: "🧽" },
-    { value: "moving", label: "Moving & Delivery", icon: "📦" },
-    { value: "tech", label: "Tech Support", icon: "💻" },
-    { value: "pet-care", label: "Pet Care", icon: "🐕" },
-    { value: "garden", label: "Garden & Outdoor", icon: "🌱" },
-    { value: "admin", label: "Admin & Data Entry", icon: "📊" },
-    { value: "creative", label: "Creative & Design", icon: "🎨" }
+    { value: "handyman", label: "Handyman" },
+    { value: "cleaning", label: "Cleaning" },
+    { value: "moving", label: "Moving" },
+    { value: "tech", label: "Tech Support" },
+    { value: "pet-care", label: "Pet Care" },
+    { value: "garden", label: "Garden & Outdoor" }
   ];
 
-  const commonSkills = [
-    "Assembly", "Plumbing", "Electrical", "Painting", "Carpentry",
-    "Cleaning", "Organization", "Pet Sitting", "Dog Walking",
-    "Gardening", "Lawn Mowing", "Moving Help", "Delivery"
-  ];
-
-  const steps = [
-    { number: 1, title: "Task Details", description: "What do you need done?" },
-    { number: 2, title: "Budget & Timeline", description: "When and how much?" },
-    { number: 3, title: "Review & Post", description: "Confirm your task" }
-  ];
-
-  const handleNext = () => {
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+  const handleCategoryChange = (value: string) => {
+    setFormData(prev => ({ ...prev, category: value }));
   };
 
-  const handleSkillToggle = (skill: string) => {
-    setTaskData(prev => ({
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
       ...prev,
-      skills: prev.skills.includes(skill)
-        ? prev.skills.filter(s => s !== skill)
-        : [...prev.skills, skill]
+      [name]: value === '' ? null : parseFloat(value),
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleBudgetTypeChange = (value: string) => {
+    setFormData(prev => ({ ...prev, budgetType: value }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    setFormData(prev => ({ ...prev, requiredDate: date || null }));
+    setIsDatePickerOpen(false);
+  };
+
+  const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    setFormData(prev => {
+      let newSkills = [...prev.skills];
+      if (checked) {
+        newSkills.push(value);
+      } else {
+        newSkills = newSkills.filter(skill => skill !== value);
+      }
+      return { ...prev, skills: newSkills };
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to post a task.",
-        variant: "destructive",
-      });
-      navigate('/auth');
+      toast.error('You must be signed in to post a task.');
       return;
     }
 
-    setIsSubmitting(true);
+    const {
+      title,
+      description,
+      category,
+      location,
+      budgetType,
+      budgetAmount,
+      budgetMin,
+      budgetMax,
+      urgent,
+      requiredDate,
+      skills,
+      timeFlexible
+    } = formData;
+
+    if (!title || !description || !category || !location || !budgetType) {
+      toast.error('Please fill in all required fields.');
+      return;
+    }
+
+    if (budgetType === 'fixed' && !budgetAmount) {
+      toast.error('Please enter a budget amount.');
+      return;
+    }
+
+    if (budgetType === 'range' && (!budgetMin || !budgetMax)) {
+      toast.error('Please enter a budget range.');
+      return;
+    }
 
     try {
-      // Prepare task data for database
-      const taskForDB = {
-        user_id: user.id,
-        title: taskData.title,
-        description: taskData.description,
-        category: taskData.category,
-        location: taskData.location,
-        budget_type: taskData.budgetType,
-        budget_amount: taskData.budgetType === 'fixed' || taskData.budgetType === 'hourly' 
-          ? parseInt(taskData.budgetAmount) || null 
-          : null,
-        budget_min: taskData.budgetType === 'range' ? parseInt(taskData.budgetRange.min) || null : null,
-        budget_max: taskData.budgetType === 'range' ? parseInt(taskData.budgetRange.max) || null : null,
-        required_date: taskData.date ? taskData.date.toISOString().split('T')[0] : null,
-        time_flexible: taskData.timeFlexible,
-        urgent: taskData.urgent,
-        skills: taskData.skills,
-        status: 'open'
-      };
-
       const { data, error } = await supabase
         .from('tasks')
-        .insert([taskForDB])
-        .select()
-        .single();
+        .insert([
+          {
+            title,
+            description,
+            category,
+            location,
+            budget_type: budgetType,
+            budget_amount: budgetAmount,
+            budget_min: budgetMin,
+            budget_max: budgetMax,
+            urgent,
+            required_date: requiredDate ? requiredDate.toISOString() : null,
+            skills,
+            time_flexible: timeFlexible,
+            user_id: user.id,
+            status: 'open'
+          },
+        ]);
 
       if (error) {
         console.error('Error creating task:', error);
-        toast({
-          title: "Error creating task",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
+        toast.error('Failed to post task. Please try again.');
+      } else {
+        console.log('Task created successfully:', data);
+        toast.success('Task posted successfully!');
+        navigate('/browse');
       }
-
-      toast({
-        title: "Task posted successfully!",
-        description: "Your task is now live and visible to Taskers.",
-      });
-
-      navigate('/browse');
     } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: "Error creating task",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error creating task:', error);
+      toast.error('An unexpected error occurred. Please try again.');
     }
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+              Post a Task
+            </h2>
+            <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+              You must be signed in to post a task.
+            </p>
+            <div className="mt-8">
+              <Button onClick={() => navigate('/auth')}>Sign In</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Post a Task</h1>
-            <p className="text-gray-600 mt-2">Describe what you need help with</p>
-          </div>
-          
-          <Link to="/offers">
-            <Button variant="outline">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              View My Offers
-            </Button>
-          </Link>
-        </div>
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <Button variant="ghost" onClick={() => navigate('/browse')} className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Browse Tasks
+        </Button>
 
-        {/* Progress Steps */}
-        <div className="flex justify-center mb-12">
-          <div className="flex items-center space-x-8">
-            {steps.map((step, index) => (
-              <div key={step.number} className="flex items-center">
-                <div className="flex flex-col items-center">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm",
-                    currentStep >= step.number
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-600"
-                  )}>
-                    {currentStep > step.number ? (
-                      <CheckCircle className="h-5 w-5" />
-                    ) : (
-                      step.number
-                    )}
-                  </div>
-                  <div className="text-center mt-2">
-                    <div className="text-sm font-medium">{step.title}</div>
-                    <div className="text-xs text-gray-500">{step.description}</div>
-                  </div>
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={cn(
-                    "w-16 h-0.5 mx-4",
-                    currentStep > step.number ? "bg-blue-600" : "bg-gray-200"
-                  )} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Step Content */}
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle>Step {currentStep}: {steps[currentStep - 1].title}</CardTitle>
-            <CardDescription>{steps[currentStep - 1].description}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {currentStep === 1 && (
-              <>
-                {/* Task Title */}
-                <div>
-                  <Label htmlFor="title">Task Title *</Label>
-                  <Input
-                    id="title"
-                    placeholder="e.g., Help me assemble IKEA furniture"
-                    value={taskData.title}
-                    onChange={(e) => setTaskData(prev => ({ ...prev, title: e.target.value }))}
-                    className="mt-1"
-                  />
-                </div>
-
-                {/* Category */}
-                <div>
-                  <Label>Category *</Label>
-                  <div className="grid grid-cols-2 gap-3 mt-2">
-                    {categories.map((category) => (
-                      <div
-                        key={category.value}
-                        className={cn(
-                          "p-3 border rounded-lg cursor-pointer transition-all hover:border-blue-500",
-                          taskData.category === category.value
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200"
-                        )}
-                        onClick={() => setTaskData(prev => ({ ...prev, category: category.value }))}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">{category.icon}</span>
-                          <span className="text-sm font-medium">{category.label}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <Label htmlFor="description">Task Description *</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe what you need done. Include any specific requirements, tools needed, or important details..."
-                    value={taskData.description}
-                    onChange={(e) => setTaskData(prev => ({ ...prev, description: e.target.value }))}
-                    className="mt-1 min-h-[120px]"
-                  />
-                </div>
-
-                {/* Location */}
-                <div>
-                  <Label htmlFor="location">Location *</Label>
-                  <div className="relative mt-1">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold">Post a New Task</CardTitle>
+                <CardDescription>Describe the task you need help with.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="title">Task Title</Label>
                     <Input
-                      id="location"
-                      placeholder="Enter your suburb or address"
-                      value={taskData.location}
-                      onChange={(e) => setTaskData(prev => ({ ...prev, location: e.target.value }))}
-                      className="pl-10"
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Fix leaky faucet"
+                      required
                     />
                   </div>
-                </div>
 
-                {/* Skills */}
-                <div>
-                  <Label>Required Skills (Optional)</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {commonSkills.map((skill) => (
-                      <Badge
-                        key={skill}
-                        variant={taskData.skills.includes(skill) ? "default" : "outline"}
-                        className="cursor-pointer"
-                        onClick={() => handleSkillToggle(skill)}
-                      >
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {currentStep === 2 && (
-              <>
-                {/* Budget Type */}
-                <div>
-                  <Label>Budget Type *</Label>
-                  <RadioGroup
-                    value={taskData.budgetType}
-                    onValueChange={(value) => setTaskData(prev => ({ ...prev, budgetType: value }))}
-                    className="mt-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="fixed" id="fixed" />
-                      <Label htmlFor="fixed">Fixed Price</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="hourly" id="hourly" />
-                      <Label htmlFor="hourly">Hourly Rate</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="range" id="range" />
-                      <Label htmlFor="range">Price Range</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {/* Budget Amount */}
-                {taskData.budgetType === "fixed" && (
                   <div>
-                    <Label htmlFor="budget">Budget Amount *</Label>
-                    <div className="relative mt-1">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        id="budget"
-                        type="number"
-                        placeholder="100"
-                        value={taskData.budgetAmount}
-                        onChange={(e) => setTaskData(prev => ({ ...prev, budgetAmount: e.target.value }))}
-                        className="pl-10"
-                      />
-                    </div>
+                    <Label htmlFor="description">Task Description</Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      placeholder="Describe the task in detail..."
+                      rows={4}
+                      required
+                    />
                   </div>
-                )}
 
-                {taskData.budgetType === "hourly" && (
                   <div>
-                    <Label htmlFor="hourly-rate">Hourly Rate *</Label>
-                    <div className="relative mt-1">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        id="hourly-rate"
-                        type="number"
-                        placeholder="25"
-                        value={taskData.budgetAmount}
-                        onChange={(e) => setTaskData(prev => ({ ...prev, budgetAmount: e.target.value }))}
-                        className="pl-10"
-                      />
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">Per hour</p>
+                    <Label htmlFor="category">Category</Label>
+                    <Select value={formData.category} onValueChange={handleCategoryChange}>
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
 
-                {taskData.budgetType === "range" && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="min-budget">Minimum Budget *</Label>
-                      <div className="relative mt-1">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <div>
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      type="text"
+                      id="location"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      placeholder="e.g., New York, NY"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Budget</Label>
+                    <RadioGroup defaultValue="fixed" className="flex flex-col space-y-1" onValueChange={handleBudgetTypeChange}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="fixed" id="fixed" />
+                        <Label htmlFor="fixed">Fixed Price</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="range" id="range" />
+                        <Label htmlFor="range">Price Range</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="hourly" id="hourly" />
+                        <Label htmlFor="hourly">Hourly Rate</Label>
+                      </div>
+                    </RadioGroup>
+
+                    {formData.budgetType === 'fixed' && (
+                      <div className="mt-2">
+                        <Label htmlFor="budgetAmount">Fixed Amount</Label>
                         <Input
-                          id="min-budget"
                           type="number"
-                          placeholder="50"
-                          value={taskData.budgetRange.min}
-                          onChange={(e) => setTaskData(prev => ({
-                            ...prev,
-                            budgetRange: { ...prev.budgetRange, min: e.target.value }
-                          }))}
-                          className="pl-10"
+                          id="budgetAmount"
+                          name="budgetAmount"
+                          value={formData.budgetAmount === null ? '' : formData.budgetAmount.toString()}
+                          onChange={handleBudgetChange}
+                          placeholder="e.g., 50"
                         />
                       </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="max-budget">Maximum Budget *</Label>
-                      <div className="relative mt-1">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                          id="max-budget"
-                          type="number"
-                          placeholder="150"
-                          value={taskData.budgetRange.max}
-                          onChange={(e) => setTaskData(prev => ({
-                            ...prev,
-                            budgetRange: { ...prev.budgetRange, max: e.target.value }
-                          }))}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                    )}
 
-                {/* Date */}
-                <div>
-                  <Label>When do you need this done? *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal mt-1",
-                          !taskData.date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {taskData.date ? format(taskData.date, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={taskData.date}
-                        onSelect={(date) => setTaskData(prev => ({ ...prev, date }))}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Time Flexibility */}
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="flexible"
-                    checked={taskData.timeFlexible}
-                    onCheckedChange={(checked) => 
-                      setTaskData(prev => ({ ...prev, timeFlexible: checked as boolean }))
-                    }
-                  />
-                  <Label htmlFor="flexible">I'm flexible with the timing</Label>
-                </div>
-
-                {/* Urgent */}
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="urgent"
-                    checked={taskData.urgent}
-                    onCheckedChange={(checked) => 
-                      setTaskData(prev => ({ ...prev, urgent: checked as boolean }))
-                    }
-                  />
-                  <Label htmlFor="urgent">This is urgent (will be highlighted)</Label>
-                </div>
-              </>
-            )}
-
-            {currentStep === 3 && (
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-4">Task Summary</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="font-medium">Title:</span> {taskData.title}
-                    </div>
-                    <div>
-                      <span className="font-medium">Category:</span> {
-                        categories.find(c => c.value === taskData.category)?.label
-                      }
-                    </div>
-                    <div>
-                      <span className="font-medium">Location:</span> {taskData.location}
-                    </div>
-                    <div>
-                      <span className="font-medium">Budget:</span> 
-                      {taskData.budgetType === "fixed" && ` $${taskData.budgetAmount}`}
-                      {taskData.budgetType === "hourly" && ` $${taskData.budgetAmount}/hour`}
-                      {taskData.budgetType === "range" && ` $${taskData.budgetRange.min} - $${taskData.budgetRange.max}`}
-                    </div>
-                    <div>
-                      <span className="font-medium">Date:</span> {
-                        taskData.date ? format(taskData.date, "PPP") : "Not specified"
-                      }
-                    </div>
-                    {taskData.skills.length > 0 && (
-                      <div>
-                        <span className="font-medium">Skills:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {taskData.skills.map(skill => (
-                            <Badge key={skill} variant="secondary" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
+                    {formData.budgetType === 'range' && (
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="budgetMin">Min Amount</Label>
+                          <Input
+                            type="number"
+                            id="budgetMin"
+                            name="budgetMin"
+                            value={formData.budgetMin === null ? '' : formData.budgetMin.toString()}
+                            onChange={handleBudgetChange}
+                            placeholder="e.g., 50"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="budgetMax">Max Amount</Label>
+                          <Input
+                            type="number"
+                            id="budgetMax"
+                            name="budgetMax"
+                            value={formData.budgetMax === null ? '' : formData.budgetMax.toString()}
+                            onChange={handleBudgetChange}
+                            placeholder="e.g., 100"
+                          />
                         </div>
                       </div>
                     )}
+
+                    {formData.budgetType === 'hourly' && (
+                      <div className="mt-2">
+                        <Label htmlFor="budgetAmount">Hourly Rate</Label>
+                        <Input
+                          type="number"
+                          id="budgetAmount"
+                          name="budgetAmount"
+                          value={formData.budgetAmount === null ? '' : formData.budgetAmount.toString()}
+                          onChange={handleBudgetChange}
+                          placeholder="e.g., 20"
+                        />
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                <div className="bg-blue-50 p-6 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">What happens next?</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Your task will be posted and visible to Taskers</li>
-                    <li>• You'll receive offers from qualified Taskers</li>
-                    <li>• Review profiles, ratings, and proposals</li>
-                    <li>• Choose your preferred Tasker and get started!</li>
-                  </ul>
-                </div>
-              </div>
-            )}
-          </CardContent>
+                  <div>
+                    <Label htmlFor="urgent" className="flex items-center space-x-2">
+                      <Checkbox
+                        id="urgent"
+                        name="urgent"
+                        checked={formData.urgent}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, urgent: !!checked }))}
+                      />
+                      <span>Urgent</span>
+                    </Label>
+                  </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between p-6 pt-0">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStep === 1}
-            >
-              Back
-            </Button>
-            <Button
-              onClick={currentStep === 3 ? handleSubmit : handleNext}
-              disabled={isSubmitting}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            >
-              {currentStep === 3 
-                ? (isSubmitting ? "Posting Task..." : "Post Task") 
-                : "Next"
-              }
-            </Button>
+                  <div>
+                    <Label>Required Date</Label>
+                    <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-[240px] justify-start text-left font-normal",
+                            !formData.requiredDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.requiredDate ? (
+                            format(formData.requiredDate, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                        <Calendar
+                          mode="single"
+                          selected={formData.requiredDate}
+                          onSelect={handleDateChange}
+                          disabled={(date) =>
+                            date < new Date()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div>
+                    <Label>Skills Required</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label htmlFor="skill-plumbing" className="flex items-center space-x-2">
+                          <Checkbox id="skill-plumbing" value="plumbing" checked={formData.skills.includes('plumbing')} onCheckedChange={handleSkillChange} />
+                          <span>Plumbing</span>
+                        </Label>
+                      </div>
+                      <div>
+                        <Label htmlFor="skill-electrical" className="flex items-center space-x-2">
+                          <Checkbox id="skill-electrical" value="electrical" checked={formData.skills.includes('electrical')} onCheckedChange={handleSkillChange} />
+                          <span>Electrical</span>
+                        </Label>
+                      </div>
+                      <div>
+                        <Label htmlFor="skill-cleaning" className="flex items-center space-x-2">
+                          <Checkbox id="skill-cleaning" value="cleaning" checked={formData.skills.includes('cleaning')} onCheckedChange={handleSkillChange} />
+                          <span>Cleaning</span>
+                        </Label>
+                      </div>
+                      <div>
+                        <Label htmlFor="skill-moving" className="flex items-center space-x-2">
+                          <Checkbox id="skill-moving" value="moving" checked={formData.skills.includes('moving')} onCheckedChange={handleSkillChange} />
+                          <span>Moving</span>
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="timeFlexible" className="flex items-center space-x-2">
+                      <Checkbox
+                        id="timeFlexible"
+                        name="timeFlexible"
+                        checked={formData.timeFlexible}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, timeFlexible: !!checked }))}
+                      />
+                      <span>Time Flexible</span>
+                    </Label>
+                  </div>
+
+                  <Button type="submit" className="w-full">Post Task</Button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
-        </Card>
+
+          <div className="hidden lg:block">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Posted Tasks</CardTitle>
+                <CardDescription>Manage your posted tasks and view offers.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4">
+                      <Plus className="h-6 w-6 text-blue-600 mb-2" />
+                      <h3 className="font-semibold">Post New Task</h3>
+                      <p className="text-sm text-gray-600">Need help with something else?</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4">
+                      <MessageSquare className="h-6 w-6 text-green-600 mb-2" />
+                      <h3 className="font-semibold">View Offers</h3>
+                      <p className="text-sm text-gray-600">Check the offers you have received</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
