@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +8,8 @@ import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
 import TaskProgress from "@/components/TaskProgress";
 import TaskerContactCard from "@/components/TaskerContactCard";
+import PaymentButton from "@/components/PaymentButton";
+import { useEffect } from "react";
 
 interface AssignedTask {
   id: string;
@@ -124,6 +125,22 @@ const demoAssignedTasks: AssignedTask[] = [
 
 const MyAssignedTasks = () => {
   const { user } = useAuth();
+
+  // Check for payment success/cancellation in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      toast.success('Payment completed successfully!');
+      // Clean up URL
+      window.history.replaceState({}, '', '/assigned-tasks');
+    } else if (paymentStatus === 'cancelled') {
+      toast.info('Payment was cancelled');
+      // Clean up URL
+      window.history.replaceState({}, '', '/assigned-tasks');
+    }
+  }, []);
 
   const { data: assignedTasks = [], isLoading } = useQuery({
     queryKey: ['assigned-tasks', user?.id],
@@ -358,6 +375,22 @@ const MyAssignedTasks = () => {
                               <span>{getTimelineDisplay(task.accepted_proposal.timeline)}</span>
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Payment Button for Completed Tasks */}
+                      {task.status === 'completed' && task.accepted_proposal && (
+                        <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                          <h4 className="font-medium text-yellow-800 mb-2">Task Completed - Payment Required</h4>
+                          <p className="text-sm text-yellow-700 mb-3">
+                            This task has been marked as completed by the tasker. Please review the work and proceed with payment.
+                          </p>
+                          <PaymentButton
+                            taskId={task.id}
+                            taskerId={task.accepted_proposal.tasker_id}
+                            amount={task.accepted_proposal.amount}
+                            taskTitle={task.title}
+                          />
                         </div>
                       )}
                     </CardContent>
