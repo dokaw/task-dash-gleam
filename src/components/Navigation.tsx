@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Briefcase, Plus, Eye, DollarSign } from "lucide-react";
+import { Menu, X, Briefcase, Plus, Eye, DollarSign, User } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 
 const Navigation = () => {
@@ -65,6 +65,15 @@ const Navigation = () => {
                 >
                   <DollarSign className="inline h-4 w-4 mr-1" />
                   Assigned Tasks
+                </Link>
+                <Link
+                  to="/profile"
+                  className={`text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium ${
+                    isActive("/profile") ? "bg-blue-50 text-blue-700" : ""
+                  }`}
+                >
+                  <User className="inline h-4 w-4 mr-1" />
+                  Profile
                 </Link>
                 
                 <NotificationBell />
@@ -153,6 +162,18 @@ const Navigation = () => {
                   >
                     <DollarSign className="inline h-4 w-4 mr-2" />
                     Assigned Tasks
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      isActive("/profile")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <User className="inline h-4 w-4 mr-2" />
+                    Profile
                   </Link>
                   <button
                     onClick={() => {

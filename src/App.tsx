@@ -13,6 +13,7 @@ import Offers from "./pages/Offers";
 import DemoOffers from "./pages/DemoOffers";
 import MyAssignedTasks from "./pages/MyAssignedTasks";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MyAssignedTasks />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               } 
             />
