@@ -9,6 +9,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Task {
   id: string;
@@ -23,7 +24,7 @@ interface MakeOfferModalProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (offer: any) => void;
+  onSubmit?: (offer: any) => void;
 }
 
 const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
@@ -37,6 +38,7 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
   const [timeline, setTimeline] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   if (!task) return null;
 
@@ -62,7 +64,9 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase
+      console.log('Submitting offer:', { task_id: task.id, tasker_id: user.id, amount, message, timeline });
+      
+      const { data, error } = await supabase
         .from('proposals')
         .insert({
           task_id: task.id,
@@ -70,7 +74,8 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
           amount: amount,
           message: message,
           timeline: timeline,
-        });
+        })
+        .select();
 
       if (error) {
         console.error('Error submitting offer:', error);
@@ -78,19 +83,27 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
         return;
       }
 
-      const offer = {
-        task_id: task.id,
-        amount: amount,
-        message: message,
-        timeline: timeline,
-      };
+      console.log('Offer submitted successfully:', data);
 
-      await onSubmit(offer);
+      // Invalidate queries to refresh the proposals list
+      queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      
+      // Call onSubmit callback if provided
+      if (onSubmit) {
+        await onSubmit({
+          task_id: task.id,
+          amount: amount,
+          message: message,
+          timeline: timeline,
+        });
+      }
       
       // Reset form
       setOfferAmount("");
       setMessage("");
       setTimeline("");
+      
+      // Close modal
       onClose();
       
       toast.success("Offer submitted successfully!");
