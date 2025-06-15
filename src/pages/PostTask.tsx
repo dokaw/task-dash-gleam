@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { MessageSquare } from "lucide-react";
 
 const PostTask = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -151,43 +153,21 @@ const PostTask = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <Button variant="ghost" onClick={() => navigate('/')} className="flex items-center space-x-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span>Back to Home</span>
-              </Button>
-              <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                TaskHub
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <>
-                  <span className="text-sm text-gray-600">Welcome, {user.email}</span>
-                  <Button variant="outline" onClick={() => navigate('/browse')}>Browse Tasks</Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" onClick={() => navigate('/auth')}>Sign In</Button>
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                    Browse Tasks
-                  </Button>
-                </>
-              )}
-            </div>
+      <Navigation />
+      
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Post a Task</h1>
+            <p className="text-gray-600 mt-2">Describe what you need help with</p>
           </div>
-        </div>
-      </nav>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Post a Task</h1>
-          <p className="text-gray-600">Tell us what you need done and get offers from trusted Taskers</p>
+          
+          <Link to="/offers">
+            <Button variant="outline">
+              <MessageSquare className="mr-2 h-4 w-4" />
+              View My Offers
+            </Button>
+          </Link>
         </div>
 
         {/* Progress Steps */}

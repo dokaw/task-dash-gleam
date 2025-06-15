@@ -1,11 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Search, MapPin, Clock, Filter, ArrowLeft, Loader2 } from "lucide-react";
+import { Search, MapPin, Clock, Filter, ArrowLeft, Loader2, Plus, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -137,44 +136,31 @@ const BrowseTasks = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <Button variant="ghost" onClick={() => navigate('/')} className="flex items-center space-x-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span>Back to Home</span>
-              </Button>
-              <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                TaskHub
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-600">Welcome, {user.email}</span>
-                  <Button variant="outline" onClick={() => navigate('/my-tasks')}>My Tasks</Button>
-                  <Button onClick={() => navigate('/post-task')}>Post a Task</Button>
-                </div>
-              ) : (
-                <>
-                  <Button variant="outline" onClick={() => navigate('/auth')}>Sign In</Button>
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" onClick={() => navigate('/post-task')}>
-                    Post a Task
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
+      <Navigation />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Tasks</h1>
-          <p className="text-gray-600">Find the perfect task that matches your skills and availability</p>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Browse Tasks</h1>
+            <p className="text-gray-600 mt-2">Find tasks that match your skills</p>
+          </div>
+          
+          {user && (
+            <div className="flex space-x-3">
+              <Link to="/post-task">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Post Task
+                </Button>
+              </Link>
+              <Link to="/offers">
+                <Button variant="outline">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  My Offers
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
