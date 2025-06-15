@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Task {
   id: string;
@@ -34,6 +36,7 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
   const [message, setMessage] = useState("");
   const [timeline, setTimeline] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
 
   if (!task) return null;
 
@@ -51,9 +54,30 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
       return;
     }
 
+    if (!user) {
+      toast.error("Please sign in to make an offer");
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
+      const { error } = await supabase
+        .from('proposals')
+        .insert({
+          task_id: task.id,
+          tasker_id: user.id,
+          amount: amount,
+          message: message,
+          timeline: timeline,
+        });
+
+      if (error) {
+        console.error('Error submitting offer:', error);
+        toast.error("Failed to submit offer. Please try again.");
+        return;
+      }
+
       const offer = {
         task_id: task.id,
         amount: amount,

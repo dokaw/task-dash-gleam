@@ -130,10 +130,9 @@ const BrowseTasks = () => {
   };
 
   const handleSubmitOffer = async (offer: any) => {
-    // TODO: Implement offer submission to database
-    console.log('Submitting offer:', offer);
-    // This will be implemented when we create the proposals table
-    toast.info('Offer functionality will be fully implemented with the proposals system');
+    // The offer is now saved to the database in MakeOfferModal
+    console.log('Offer submitted:', offer);
+    toast.success('Your offer has been submitted successfully!');
   };
 
   return (
@@ -155,6 +154,7 @@ const BrowseTasks = () => {
               {user ? (
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-gray-600">Welcome, {user.email}</span>
+                  <Button variant="outline" onClick={() => navigate('/my-tasks')}>My Tasks</Button>
                   <Button onClick={() => navigate('/post-task')}>Post a Task</Button>
                 </div>
               ) : (

@@ -36,6 +36,50 @@ export type Database = {
         }
         Relationships: []
       }
+      proposals: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          message: string
+          status: string
+          task_id: string
+          tasker_id: string
+          timeline: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          task_id: string
+          tasker_id: string
+          timeline: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          task_id?: string
+          tasker_id?: string
+          timeline?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           budget_amount: number | null
