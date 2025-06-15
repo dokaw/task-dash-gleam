@@ -45,18 +45,25 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Starting offer submission...');
+    console.log('User:', user);
+    console.log('Task:', task);
+    
     if (!offerAmount || !message || !timeline) {
+      console.log('Missing required fields:', { offerAmount, message, timeline });
       toast.error("Please fill in all required fields");
       return;
     }
 
     const amount = parseFloat(offerAmount);
     if (isNaN(amount) || amount <= 0) {
+      console.log('Invalid amount:', amount);
       toast.error("Please enter a valid offer amount");
       return;
     }
 
     if (!user) {
+      console.log('No user found, redirecting to auth');
       toast.error("Please sign in to make an offer");
       return;
     }
@@ -64,8 +71,30 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      console.log('Submitting offer:', { task_id: task.id, tasker_id: user.id, amount, message, timeline });
+      console.log('Submitting offer with data:', { 
+        task_id: task.id, 
+        tasker_id: user.id, 
+        amount, 
+        message, 
+        timeline 
+      });
       
+      // Check if user is authenticated by getting the current session
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      console.log('Current session:', session);
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        toast.error("Authentication error. Please sign in again.");
+        return;
+      }
+
+      if (!session?.session) {
+        console.log('No active session found');
+        toast.error("Please sign in to make an offer");
+        return;
+      }
+
       const { data, error } = await supabase
         .from('proposals')
         .insert({
@@ -78,8 +107,20 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
         .select();
 
       if (error) {
-        console.error('Error submitting offer:', error);
-        toast.error("Failed to submit offer. Please try again.");
+        console.error('Database error details:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        
+        // Provide more specific error messages based on the error
+        if (error.code === '23505') {
+          toast.error("You have already submitted an offer for this task.");
+        } else if (error.code === '42501') {
+          toast.error("You don't have permission to submit offers. Please check your account.");
+        } else {
+          toast.error(`Failed to submit offer: ${error.message}`);
+        }
         return;
       }
 
@@ -108,8 +149,8 @@ const MakeOfferModal: React.FC<MakeOfferModalProps> = ({
       
       toast.success("Offer submitted successfully!");
     } catch (error) {
-      console.error('Error submitting offer:', error);
-      toast.error("Failed to submit offer. Please try again.");
+      console.error('Unexpected error submitting offer:', error);
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
