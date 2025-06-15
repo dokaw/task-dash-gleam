@@ -10,6 +10,8 @@ import Index from "./pages/Index";
 import BrowseTasks from "./pages/BrowseTasks";
 import PostTask from "./pages/PostTask";
 import Offers from "./pages/Offers";
+import DemoOffers from "./pages/DemoOffers";
+import MyAssignedTasks from "./pages/MyAssignedTasks";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +28,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/browse" element={<BrowseTasks />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/demo-offers" element={<DemoOffers />} />
             <Route 
               path="/post-task" 
               element={
@@ -39,6 +42,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Offers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/assigned-tasks" 
+              element={
+                <ProtectedRoute>
+                  <MyAssignedTasks />
                 </ProtectedRoute>
               } 
             />

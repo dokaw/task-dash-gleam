@@ -30,6 +30,17 @@ const Navigation = () => {
                 Browse Tasks
               </Link>
               
+              <Link
+                to="/demo-offers"
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  isActive('/demo-offers')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Demo Offers
+              </Link>
+              
               {user && (
                 <>
                   <Link
@@ -52,6 +63,17 @@ const Navigation = () => {
                     }`}
                   >
                     My Offers
+                  </Link>
+
+                  <Link
+                    to="/assigned-tasks"
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/assigned-tasks')
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Assigned Tasks
                   </Link>
                 </>
               )}
