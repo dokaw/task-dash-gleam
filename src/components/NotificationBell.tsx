@@ -104,11 +104,9 @@ const NotificationBell = () => {
 
     const subscribeToChannel = async () => {
       if (!channelSubscribed) {
-        const subscriptionResult = await channel.subscribe();
-        if (subscriptionResult === 'SUBSCRIBED') {
-          channelSubscribed = true;
-          console.log('Successfully subscribed to notifications channel');
-        }
+        await channel.subscribe();
+        channelSubscribed = true;
+        console.log('Successfully subscribed to notifications channel');
       }
     };
 
