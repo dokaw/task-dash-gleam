@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { Calendar as CalendarIcon, ArrowLeft, Plus, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
+import { Link } from 'react-router-dom';
 
 interface FormData {
   title: string;
@@ -92,14 +93,13 @@ const PostTask = () => {
     setIsDatePickerOpen(false);
   };
 
-  const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value, checked } = e.target;
+  const handleSkillChange = (skill: string, checked: boolean) => {
     setFormData(prev => {
       let newSkills = [...prev.skills];
       if (checked) {
-        newSkills.push(value);
+        newSkills.push(skill);
       } else {
-        newSkills = newSkills.filter(skill => skill !== value);
+        newSkills = newSkills.filter(s => s !== skill);
       }
       return { ...prev, skills: newSkills };
     });
@@ -397,25 +397,41 @@ const PostTask = () => {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label htmlFor="skill-plumbing" className="flex items-center space-x-2">
-                          <Checkbox id="skill-plumbing" value="plumbing" checked={formData.skills.includes('plumbing')} onCheckedChange={handleSkillChange} />
+                          <Checkbox 
+                            id="skill-plumbing" 
+                            checked={formData.skills.includes('plumbing')} 
+                            onCheckedChange={(checked) => handleSkillChange('plumbing', !!checked)} 
+                          />
                           <span>Plumbing</span>
                         </Label>
                       </div>
                       <div>
                         <Label htmlFor="skill-electrical" className="flex items-center space-x-2">
-                          <Checkbox id="skill-electrical" value="electrical" checked={formData.skills.includes('electrical')} onCheckedChange={handleSkillChange} />
+                          <Checkbox 
+                            id="skill-electrical" 
+                            checked={formData.skills.includes('electrical')} 
+                            onCheckedChange={(checked) => handleSkillChange('electrical', !!checked)} 
+                          />
                           <span>Electrical</span>
                         </Label>
                       </div>
                       <div>
                         <Label htmlFor="skill-cleaning" className="flex items-center space-x-2">
-                          <Checkbox id="skill-cleaning" value="cleaning" checked={formData.skills.includes('cleaning')} onCheckedChange={handleSkillChange} />
+                          <Checkbox 
+                            id="skill-cleaning" 
+                            checked={formData.skills.includes('cleaning')} 
+                            onCheckedChange={(checked) => handleSkillChange('cleaning', !!checked)} 
+                          />
                           <span>Cleaning</span>
                         </Label>
                       </div>
                       <div>
                         <Label htmlFor="skill-moving" className="flex items-center space-x-2">
-                          <Checkbox id="skill-moving" value="moving" checked={formData.skills.includes('moving')} onCheckedChange={handleSkillChange} />
+                          <Checkbox 
+                            id="skill-moving" 
+                            checked={formData.skills.includes('moving')} 
+                            onCheckedChange={(checked) => handleSkillChange('moving', !!checked)} 
+                          />
                           <span>Moving</span>
                         </Label>
                       </div>
